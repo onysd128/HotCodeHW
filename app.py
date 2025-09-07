@@ -79,14 +79,18 @@ def create_account():
     balances = data.get("balances", {"USD": 0,"EUR":0,"UAH":0})
 
     if not name:
+        log_transaction("create_account", status="failed", error="Name is required")
         return jsonify({"error": "Name is required"}), 400
     if not isinstance(balances, dict) or not balances:
+        log_transaction("create_account", status="failed", error="Balances must be a dict")
         return jsonify({"error": "Balances must be a dict"}), 400
     
     for cur, amount in balances.items():
         if cur not in CURRENCY_RATES:
+            log_transaction("create_account", status="failed", error=f"Unsupported currency {cur}")
             return jsonify({"error":f"Unsupported currency {cur}"}), 400
         if not isinstance(amount, (int,float)) or amount<0:
+            log_transaction("create_account", status="failed", error=f"Invalid balance for {cur}")
             return jsonify({"error": f"Invalid balance for {cur}"}), 400
 
     account_id = next_id
@@ -97,6 +101,7 @@ def create_account():
     }
     next_id += 1
 
+    log_transaction("create_account", account_id=account_id, status="success")
     return jsonify(accounts[account_id]), 201
 
 @app.route("/deposit", methods=["POST"])
@@ -108,14 +113,18 @@ def deposit():
     currency = data.get("currency")
 
     if account_id not in accounts:
+        log_transaction("deposit", account_id, amount, currency, status="failed", error="Account not found")
         return jsonify({"error": "Account not found"}), 404
     if not isinstance(amount, (int, float)) or amount <= 0:
+        log_transaction("deposit", account_id, amount, currency, status="failed", error="Invalid amount")
         return jsonify({"error": "Deposit amount must be positive"}), 400
     if currency not in CURRENCY_RATES:
+        log_transaction("deposit", account_id, amount, currency, status="failed", error="Unsupported currency")
         return jsonify({"error": f"Unsupported currency {currency}"}), 400
 
     account = accounts[account_id]
     account["balances"][currency] = account["balances"].get(currency, 0) + float(amount)
+    log_transaction("deposit", account_id, amount, currency, status="success")
     return jsonify(account), 200
 
 @app.route("/withdraw", methods=["POST"])
@@ -127,17 +136,22 @@ def withdraw():
     currency = data.get("currency")
 
     if account_id not in accounts:
+        log_transaction("withdraw", account_id, amount, currency, status="failed", error="Account not found")
         return jsonify({"error": "Account not found"}), 404
     if not isinstance(amount, (int, float)) or amount <= 0:
+        log_transaction("withdraw", account_id, amount, currency, status="failed", error="Invalid amount")
         return jsonify({"error": "Withdraw amount must be positive"}), 400
     if currency not in CURRENCY_RATES:
+        log_transaction("withdraw", account_id, amount, currency, status="failed", error="Unsupported currency")
         return jsonify({"error": f"Unsupported currency {currency}"}), 400
 
     account = accounts[account_id]
     if account["balances"].get(currency, 0)<amount:
+        log_transaction("withdraw", account_id, amount, currency, status="failed", error="Insufficient funds")
         return jsonify({"error": "Insufficient funds"}), 400
 
     account["balances"][currency] = account["balances"].get(currency, 0) - float(amount)
+    log_transaction("withdraw", account_id, amount, currency, status="success")
     return jsonify(account), 200
 
 @app.route("/transfer", methods=["POST"])
@@ -150,21 +164,26 @@ def transfer():
     currency = data.get("currency")
 
     if from_id not in accounts or to_id not in accounts:
+        log_transaction("transfer", from_id, amount, currency, to_id=to_id, status="failed", error="Account not found")
         return jsonify({"error": "One or both accounts not found"}), 404
     if not isinstance(amount, (int, float)) or amount <= 0:
+        log_transaction("transfer", from_id, amount, currency, to_id=to_id, status="failed", error="Invalid amount")
         return jsonify({"error": "Transfer amount must be positive"}), 400
     if currency not in CURRENCY_RATES:
+        log_transaction("transfer", from_id, amount, currency, to_id=to_id, status="failed", error="Unsupported currency")
         return jsonify({"error": f"Unsupported currency {currency}"}), 400
     
     from_account = accounts[from_id]
     to_account = accounts[to_id]
 
     if from_account["balances"].get(currency, 0)<amount:
+        log_transaction("transfer", from_id, amount, currency, to_id=to_id, status="failed", error="Insufficient funds")
         return jsonify({"error": "Insufficient funds"}), 400
     
     from_account["balances"][currency] -= float(amount)
     to_account["balances"][currency] += float(amount)
 
+    log_transaction("transfer", from_id, amount, currency, to_id=to_id, status="success")
     return jsonify({
         "from_account": from_account,
         "to_account": to_account
