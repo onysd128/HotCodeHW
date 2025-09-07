@@ -46,18 +46,25 @@ def create_account():
 
     data = request.get_json()
     name = data.get("name")
-    initial_balance = data.get("initial_balance", 0)
+    # initial_balance = data.get("initial_balance", 0)
+    balances = data.get("balances", {"USD": 0,"EUR":0,"UAH":0})
 
     if not name:
         return jsonify({"error": "Name is required"}), 400
-    if not isinstance(initial_balance, (int, float)) or initial_balance < 0:
-        return jsonify({"error": "Initial balance must be a non-negative number"}), 400
+    if not isinstance(balances, dict) or not balances:
+        return jsonify({"error": "Balances must be a dict"}), 400
+    
+    for cur, amount in balances.items():
+        if cur not in CURRENCY_RATES:
+            return jsonify({"error":f"Unsupported currency {cur}"}), 400
+        if not isinstance(amount, (int,float)) or amount<0:
+            return jsonify({"error": f"invalid balance for {cur}"}), 400
 
     account_id = next_id
     accounts[account_id] = {
         "id": account_id,
         "name": name,
-        "balance": float(initial_balance)
+        "balances": {cur: float(amount) for cur, amount in balances.items()}
     }
     next_id += 1
 
