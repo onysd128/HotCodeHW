@@ -59,5 +59,27 @@ def withdraw():
     accounts[account_id]["balance"] -= float(amount)
     return jsonify(accounts[account_id])
 
+@app.route("/transfer", methods=["POST"])
+def transfer():
+    data = request.get_json()
+    from_id = data.get("from_account_id")
+    to_id = data.get("to_account_id")
+    amount = data.get("amount")
+
+    if from_id not in accounts or to_id not in accounts:
+        return jsonify({"error": "One or both accounts not found"}), 404
+    if not isinstance(amount, (int, float)) or amount <= 0:
+        return jsonify({"error": "Transfer amount must be positive"}), 400
+    if accounts[from_id]["balance"] < amount:
+        return jsonify({"error": "Insufficient funds"}), 400
+
+    accounts[from_id]["balance"] -= float(amount)
+    accounts[to_id]["balance"] += float(amount)
+
+    return jsonify({
+        "from_account": accounts[from_id],
+        "to_account": accounts[to_id]
+    })
+
 if __name__ == "__main__":
     app.run(debug=True)
