@@ -76,14 +76,18 @@ def deposit():
     data = request.get_json()
     account_id = data.get("account_id")
     amount = data.get("amount")
+    currency = data.get("currency")
 
     if account_id not in accounts:
         return jsonify({"error": "Account not found"}), 404
     if not isinstance(amount, (int, float)) or amount <= 0:
         return jsonify({"error": "Deposit amount must be positive"}), 400
+    if currency not in CURRENCY_RATES:
+        return jsonify({"error": f"Unsupported currency {currency}"}), 400
 
-    accounts[account_id]["balance"] += float(amount)
-    return jsonify(accounts[account_id]), 200
+    account = accounts[account_id]
+    account["balances"][currency] = account["balances"].get(currency, 0) + float(amount)
+    return jsonify(account), 200
 
 @app.route("/withdraw", methods=["POST"])
 @jwt_required() 
@@ -91,17 +95,21 @@ def withdraw():
     data = request.get_json()
     account_id = data.get("account_id")
     amount = data.get("amount")
+    currency = data.get("currency")
 
     if account_id not in accounts:
         return jsonify({"error": "Account not found"}), 404
     if not isinstance(amount, (int, float)) or amount <= 0:
         return jsonify({"error": "Withdraw amount must be positive"}), 400
+    if currency not in CURRENCY_RATES:
+        return jsonify({"error": f"Unsupported currency {currency}"}), 400
 
-    if accounts[account_id]["balance"] < amount:
+    account = accounts[account_id]
+    if account["balances"].get(currency, 0)<amount:
         return jsonify({"error": "Insufficient funds"}), 400
 
-    accounts[account_id]["balance"] -= float(amount)
-    return jsonify(accounts[account_id]), 200
+    account["balances"][currency] = account["balances"].get(currency, 0) - float(amount)
+    return jsonify(account), 200
 
 @app.route("/transfer", methods=["POST"])
 @jwt_required() 
