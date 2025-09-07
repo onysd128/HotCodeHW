@@ -6,6 +6,7 @@ from flask_limiter.util import get_remote_address
 import datetime
 from dotenv import load_dotenv
 import os
+import logging
 
 load_dotenv()
 
@@ -28,13 +29,6 @@ app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY","XXX")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(hours= int(os.environ.get("JWT_ACCESS_TOKEN_EXPIRES_HOURS",1)))
 jwt = JWTManager(app)
 
-@app.route("/login", methods=["POST"])
-@basic_auth.required
-@limiter.limit("5 per minute")
-def login():
-    access_token = create_access_token(identity="admin")
-    return jsonify(access_token=access_token), 200
-
 accounts = {}
 next_id = 1
 
@@ -49,6 +43,31 @@ def convert(amount, from_currency, to_currency):
         raise ValueError("Unsupported currency")
     amount_in_usd = amount/CURRENCY_RATES[from_currency]
     return amount_in_usd * CURRENCY_RATES[to_currency]
+
+transactions_log = []
+
+def log_transaction(tx_type, account_id=None, amount=None, currency=None, 
+                    from_id=None, to_id=None, status="success", error=None):
+    record = {
+        "type": tx_type,
+        "account_id": account_id,
+        "from_id": from_id,
+        "to_id": to_id,
+        "amount": amount,
+        "currency": currency,
+        "status": status,
+        "error": error,
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }
+    transactions_log.append(record)
+    logging.info(str(record))
+
+@app.route("/login", methods=["POST"])
+@basic_auth.required
+@limiter.limit("5 per minute")
+def login():
+    access_token = create_access_token(identity="admin")
+    return jsonify(access_token=access_token), 200
 
 @app.route("/create_account", methods=["POST"])
 @jwt_required() 
@@ -150,6 +169,11 @@ def transfer():
         "from_account": from_account,
         "to_account": to_account
     }), 200
+
+@app.route("/transactions", methods=["GET"])
+@jwt_required()
+def get_transactions():
+    return jsonify(transactions_log), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
