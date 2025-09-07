@@ -1,11 +1,34 @@
 from flask import Flask, request, jsonify
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required
+from flask_basicauth import BasicAuth
+import datetime
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 app = Flask(__name__)
+basic_auth = BasicAuth(app)
+
+app.config['BASIC_AUTH_USERNAME'] = os.environ.get("BASIC_AUTH_USERNAME","XXX")
+app.config['BASIC_AUTH_PASSWORD'] = os.environ.get("BASIC_AUTH_PASSWORD","XXX")
+
+
+app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY","XXX")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(hours= int(os.environ.get("JWT_ACCESS_TOKEN_EXPIRES_HOURS",1)))
+jwt = JWTManager(app)
+
+@app.route("/login", methods=["POST"])
+@basic_auth.required
+def login():
+    access_token = create_access_token(identity="admin")
+    return jsonify(access_token=access_token), 200
 
 accounts = {}
 next_id = 1        
 
 @app.route("/create_account", methods=["POST"])
+@jwt_required() 
 def create_account():
     global next_id
 
@@ -29,6 +52,7 @@ def create_account():
     return jsonify(accounts[account_id]), 201
 
 @app.route("/deposit", methods=["POST"])
+@jwt_required() 
 def deposit():
     data = request.get_json()
     account_id = data.get("account_id")
@@ -43,6 +67,7 @@ def deposit():
     return jsonify(accounts[account_id]), 200
 
 @app.route("/withdraw", methods=["POST"])
+@jwt_required() 
 def withdraw():
     data = request.get_json()
     account_id = data.get("account_id")
@@ -60,6 +85,7 @@ def withdraw():
     return jsonify(accounts[account_id]), 200
 
 @app.route("/transfer", methods=["POST"])
+@jwt_required() 
 def transfer():
     data = request.get_json()
     from_id = data.get("from_account_id")
