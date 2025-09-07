@@ -25,7 +25,19 @@ def login():
     return jsonify(access_token=access_token), 200
 
 accounts = {}
-next_id = 1        
+next_id = 1
+
+CURRENCY_RATES = {
+    "USD": 1,
+    "EUR": 0.85,
+    "UAH": 41.24
+}
+
+def convert(amount, from_currency, to_currency):
+    if from_currency not in CURRENCY_RATES or to_currency not in CURRENCY_RATES:
+        raise ValueError("Unsupported currency")
+    amount_in_usd = amount/CURRENCY_RATES[from_currency]
+    return amount_in_usd * CURRENCY_RATES[to_currency]
 
 @app.route("/create_account", methods=["POST"])
 @jwt_required() 
