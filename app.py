@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_basicauth import BasicAuth
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import datetime
 from dotenv import load_dotenv
 import os
@@ -9,6 +11,14 @@ load_dotenv()
 
 app = Flask(__name__)
 basic_auth = BasicAuth(app)
+
+def get_jwt_user():
+    try:
+        return get_jwt_identity()  
+    except Exception as e:
+        return get_remote_address()
+
+limiter = Limiter(key_func = get_jwt_user, app=app, default_limits = ["60 per minute","2 per second"])
 
 app.config['BASIC_AUTH_USERNAME'] = os.environ.get("BASIC_AUTH_USERNAME","XXX")
 app.config['BASIC_AUTH_PASSWORD'] = os.environ.get("BASIC_AUTH_PASSWORD","XXX")
@@ -20,6 +30,7 @@ jwt = JWTManager(app)
 
 @app.route("/login", methods=["POST"])
 @basic_auth.required
+@limiter.limit("5 per minute")
 def login():
     access_token = create_access_token(identity="admin")
     return jsonify(access_token=access_token), 200
@@ -46,7 +57,6 @@ def create_account():
 
     data = request.get_json()
     name = data.get("name")
-    # initial_balance = data.get("initial_balance", 0)
     balances = data.get("balances", {"USD": 0,"EUR":0,"UAH":0})
 
     if not name:
