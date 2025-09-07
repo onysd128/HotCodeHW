@@ -58,7 +58,7 @@ def create_account():
         if cur not in CURRENCY_RATES:
             return jsonify({"error":f"Unsupported currency {cur}"}), 400
         if not isinstance(amount, (int,float)) or amount<0:
-            return jsonify({"error": f"invalid balance for {cur}"}), 400
+            return jsonify({"error": f"Invalid balance for {cur}"}), 400
 
     account_id = next_id
     accounts[account_id] = {
