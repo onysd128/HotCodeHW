@@ -194,5 +194,20 @@ def transfer():
 def get_transactions():
     return jsonify(transactions_log), 200
 
+@app.route("/accounts", methods=["GET"])
+@app.route("/accounts/<int:account_id>", methods=["GET"])
+@jwt_required()
+def get_accounts(account_id=None):
+    if account_id is None:
+        log_transaction("get_accounts", status="success")
+        return jsonify(list(accounts.values())), 200
+    else:
+        if account_id not in accounts:
+            log_transaction("get_accounts", account_id=account_id,
+                            status="failed", error="Account not found")
+            return jsonify({"error": "Account not found"}), 404
+        log_transaction("get_accounts", account_id=account_id, status="success")
+        return jsonify(accounts[account_id]), 200
+
 if __name__ == "__main__":
     app.run(debug=True)
