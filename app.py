@@ -118,20 +118,27 @@ def transfer():
     from_id = data.get("from_account_id")
     to_id = data.get("to_account_id")
     amount = data.get("amount")
+    currency = data.get("currency")
 
     if from_id not in accounts or to_id not in accounts:
         return jsonify({"error": "One or both accounts not found"}), 404
     if not isinstance(amount, (int, float)) or amount <= 0:
         return jsonify({"error": "Transfer amount must be positive"}), 400
-    if accounts[from_id]["balance"] < amount:
-        return jsonify({"error": "Insufficient funds"}), 400
+    if currency not in CURRENCY_RATES:
+        return jsonify({"error": f"Unsupported currency {currency}"}), 400
+    
+    from_account = accounts[from_id]
+    to_account = accounts[to_id]
 
-    accounts[from_id]["balance"] -= float(amount)
-    accounts[to_id]["balance"] += float(amount)
+    if from_account["balances"].get(currency, 0)<amount:
+        return jsonify({"error": "Insufficient funds"}), 400
+    
+    from_account["balances"][currency] -= float(amount)
+    to_account["balances"][currency] += float(amount)
 
     return jsonify({
-        "from_account": accounts[from_id],
-        "to_account": accounts[to_id]
+        "from_account": from_account,
+        "to_account": to_account
     }), 200
 
 if __name__ == "__main__":
