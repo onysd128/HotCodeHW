@@ -40,7 +40,7 @@ def deposit():
         return jsonify({"error": "Deposit amount must be positive"}), 400
 
     accounts[account_id]["balance"] += float(amount)
-    return jsonify(accounts[account_id])
+    return jsonify(accounts[account_id]), 200
 
 @app.route("/withdraw", methods=["POST"])
 def withdraw():
@@ -57,7 +57,7 @@ def withdraw():
         return jsonify({"error": "Insufficient funds"}), 400
 
     accounts[account_id]["balance"] -= float(amount)
-    return jsonify(accounts[account_id])
+    return jsonify(accounts[account_id]), 200
 
 @app.route("/transfer", methods=["POST"])
 def transfer():
@@ -79,7 +79,7 @@ def transfer():
     return jsonify({
         "from_account": accounts[from_id],
         "to_account": accounts[to_id]
-    })
+    }), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
