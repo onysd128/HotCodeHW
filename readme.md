@@ -160,7 +160,7 @@ Response:
         "id": 2,
         "name": "Brandon"
     }
-
+}
 ```
 
 ### Transactions
