@@ -9,6 +9,8 @@ This project is a simple **banking API** built with Flask featuring:
 - Transaction logging
 - Endpoints for viewing transactions and accounts
 
+I also added postman collection file to the repo (HotcodeHW.postman_collection.json), so you can import it into postman and test this api in more user-frindly way!
+
 ## Getting Started
 
 ### 1. Clone the repository
