@@ -13,8 +13,8 @@ This project is a simple **banking API** built with Flask featuring:
 
 ### 1. Clone the repository
 ```bash
-git clone ill_put_link_later
-cd ill_put_name_later
+git clone https://github.com/onysd128/HotCodeHW.git
+cd HotCodeHW
 ```
 
 ### 2. Create virtual environment and install dependencies
